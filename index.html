@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>햄컵</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body {
+        margin: 0;
+        background: #f8f6f0;
+        font-family: "Pretendard", sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 20px;
+    }
+
+    h1 {
+        margin-top: 10px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #5a463a;
+    }
+
+    #fileBox {
+        margin: 20px 0;
+    }
+
+    button {
+        padding: 12px 20px;
+        margin-top: 10px;
+        border: none;
+        border-radius: 10px;
+        background: #ffcf6b;
+        font-size: 16px;
+        color: #5a463a;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .round-label {
+        margin: 10px 0;
+        font-size: 18px;
+        color: #6c584b;
+        font-weight: 500;
+    }
+
+    /* 가로 VS 구도 */
+    #gameBox {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+        max-width: 800px;
+    }
+
+    .candidate-card {
+        flex: 1;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        overflow: hidden;
+        cursor: pointer;
+        transition: transform 0.15s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 10px;
+    }
+
+    .candidate-card:active {
+        transform: scale(0.97);
+    }
+
+    .candidate-img {
+        width: 100%;
+        height: auto;
+        max-height: 260px;
+        object-fit: cover;
+        background: #eee;
+        border-radius: 15px;
+    }
+
+    .candidate-name {
+        text-align: center;
+        padding: 10px;
+        font-size: 18px;
+        color: #4a3b31;
+        font-weight: 600;
+        word-break: break-word; /* 이름 길어도 줄바꿈 */
+        width: 100%;
+    }
+
+    #resultBox {
+        margin-top: 20px;
+        text-align: center;
+        display: none;
+    }
+
+    #resultBox img {
+        width: 85%;
+        max-width: 350px;
+        border-radius: 20px;
+        box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        margin-bottom: 10px;
+    }
+</style>
+</head>
+<body>
+
+<h1>🐹 최고의 햄을 찾아서</h1>
+
+<div id="fileBox">
+    <input type="file" id="csvInput" accept=".csv">
+    <br>
+    <button onclick="start()">시작하기</button>
+</div>
+
+<div id="roundLabel" class="round-label"></div>
+
+<div id="gameBox" style="display:none;">
+    <div id="leftCard" class="candidate-card" onclick="select(0)">
+        <img id="leftImg" class="candidate-img">
+        <div id="leftName" class="candidate-name"></div>
+    </div>
+
+    <div id="rightCard" class="candidate-card" onclick="select(1)">
+        <img id="rightImg" class="candidate-img">
+        <div id="rightName" class="candidate-name"></div>
+    </div>
+</div>
+
+<div id="resultBox">
+    <h2>🏆 최고의 햄!!!</h2>
+    <img id="resultImg">
+    <div id="resultName" class="candidate-name"></div>
+</div>
+
+<script>
+let candidates = [];
+let nextRound = [];
+let index = 0;
+
+// CSV 불러오기
+document.getElementById("csvInput").addEventListener("change", function(e){
+    const file = e.target.files[0];
+    if(!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(evt){
+        const lines = evt.target.result.split("\n").map(v=>v.trim());
+        let list = [];
+        for(let i=1;i<lines.length;i++){ 
+            if(!lines[i]) continue;
+            const name = lines[i].split(",")[0].trim();
+            if(!name) continue;
+            list.push({name: name});
+        }
+        candidates = list;
+        alert("CSV 로딩 완료! 시작 버튼을 누르세요.");
+    }
+    reader.readAsText(file,"UTF-8");
+});
+
+// 시작
+function start(){
+    if(candidates.length < 2){
+        alert("후보가 최소 2명 이상이어야 합니다!");
+        return;
+    }
+    shuffle(candidates);
+    index = 0;
+    nextRound = [];
+    showNextMatch();
+    document.getElementById("fileBox").style.display = "none";
+    document.getElementById("gameBox").style.display = "flex";
+}
+
+// 섞기
+function shuffle(arr){
+    for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]]=[arr[j], arr[i]];
+    }
+}
+
+// 다음 경기 표시
+function showNextMatch(){
+    const left = candidates[index];
+    const right = candidates[index+1];
+
+    document.getElementById("roundLabel").textContent = `${candidates.length}강 진행중`;
+
+    setupCard(left,"leftImg","leftName");
+
+    if(right){
+        document.getElementById("rightCard").style.display="flex";
+        setupCard(right,"rightImg","rightName");
+    }else{
+        document.getElementById("rightCard").style.display="none"; // 부전승
+    }
+}
+
+// 카드 세팅 (이미지 자동 로드)
+function setupCard(data,imgId,nameId){
+    const imgEl = document.getElementById(imgId);
+    const nameEl = document.getElementById(nameId);
+    nameEl.textContent = data.name;
+
+    const imgPath = `images/${data.name}.jpg`;
+    const img = new Image();
+    img.onload = function(){
+        imgEl.src = imgPath;
+        imgEl.style.display="block";
+    }
+    img.onerror = function(){
+        imgEl.style.display="none";
+    }
+    img.src = imgPath;
+}
+
+// 선택
+function select(choice){
+    const left = candidates[index];
+    const right = candidates[index+1];
+    if(choice===0) nextRound.push(left);
+    else if(right) nextRound.push(right);
+
+    index+=2;
+
+    if(index>=candidates.length){
+        candidates=nextRound;
+        nextRound=[];
+        index=0;
+        if(candidates.length===1){
+            showResult(candidates[0]);
+            return;
+        }
+    }
+    showNextMatch();
+}
+
+// 우승
+function showResult(winner){
+    document.getElementById("gameBox").style.display="none";
+    document.getElementById("roundLabel").style.display="none";
+
+    document.getElementById("resultName").textContent = winner.name;
+
+    const resultImg=document.getElementById("resultImg");
+    const imgPath = `images/${winner.name}.jpg`;
+    const img = new Image();
+    img.onload = function(){
+        resultImg.src=imgPath;
+        resultImg.style.display="block";
+    }
+    img.onerror=function(){
+        resultImg.style.display="none";
+    }
+    img.src = imgPath;
+
+    document.getElementById("resultBox").style.display="block";
+}
+</script>
+</body>
+</html>
