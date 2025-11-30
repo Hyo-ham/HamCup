@@ -92,7 +92,7 @@ button {
 
 <h1>🐹 최고의 햄을 찾아서</h1>
 
-<!-- 🔥 몇 강 선택 UI -->
+<!-- 🔥 라운드 선택 UI -->
 <select id="roundSelect" style="padding:10px; margin-top:10px; border-radius:10px; font-size:16px;">
     <option value="4">4강</option>
     <option value="8" selected>8강</option>
@@ -110,7 +110,7 @@ button {
         <img id="leftImg" class="candidate-img">
         <div id="leftName" class="candidate-name"></div>
     </div>
-
+<h1> VS </h1>
     <div id="rightCard" class="candidate-card" onclick="select(1)">
         <img id="rightImg" class="candidate-img">
         <div id="rightName" class="candidate-name"></div>
@@ -121,6 +121,7 @@ button {
     <h2>🏆 최고의 햄!!!</h2>
     <img id="resultImg">
     <div id="resultName" class="candidate-name"></div>
+    <h3> 이 최고!! </h3>
 </div>
 
 <script>
@@ -130,7 +131,7 @@ let index = 0;
 
 const imageExtensions = ["jpg", "jpeg", "png", "JPG", "JPEG", "PNG"];
 
-// 🔥 이미지 자동 확장자 탐색
+// 이미지 자동 확장자 탐색
 function loadImageAuto(pathBase, imgEl) {
     let i = 0;
 
@@ -156,7 +157,7 @@ function loadImageAuto(pathBase, imgEl) {
     tryNext();
 }
 
-// 🔥 GitHub CSV 자동 로딩
+// CSV 자동 로딩
 window.onload = async function () {
     const url = "https://raw.githubusercontent.com/Hyo-ham/HamCup/refs/heads/main/name.csv";
 
@@ -181,12 +182,12 @@ window.onload = async function () {
     }
 };
 
-// 🔥 시작
+//시작
 function start() {
     const roundCount = parseInt(document.getElementById("roundSelect").value);
 
     if (candidates.length < roundCount) {
-        alert(`후보가 ${roundCount}명보다 적어요! CSV에 더 추가하거나 라운드를 줄여줘.`);
+        alert(`후보가 ${roundCount}명보다 적어요!`);
         return;
     }
 
@@ -283,3 +284,4 @@ function showResult(winner) {
 
 </body>
 </html>
+
