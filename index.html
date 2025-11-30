@@ -61,10 +61,8 @@ button {
 .candidate-card:active { transform: scale(0.97); }
 .candidate-img {
     width: 100%;
-    height: auto;
     max-height: 260px;
     object-fit: cover;
-    background: #eee;
     border-radius: 15px;
 }
 .candidate-name {
@@ -94,6 +92,15 @@ button {
 
 <h1>🐹 최고의 햄을 찾아서</h1>
 
+<!-- 🔥 몇 강 선택 UI -->
+<select id="roundSelect" style="padding:10px; margin-top:10px; border-radius:10px; font-size:16px;">
+    <option value="4">4강</option>
+    <option value="8" selected>8강</option>
+    <option value="16">16강</option>
+    <option value="32">32강</option>
+    <option value="64">64강</option>
+</select>
+
 <button onclick="start()">시작하기</button>
 
 <div id="roundLabel" class="round-label"></div>
@@ -121,9 +128,38 @@ let candidates = [];
 let nextRound = [];
 let index = 0;
 
-// 🔥 페이지 로드시 GitHub CSV 자동 로드
+const imageExtensions = ["jpg", "jpeg", "png", "JPG", "JPEG", "PNG"];
+
+// 🔥 이미지 자동 확장자 탐색
+function loadImageAuto(pathBase, imgEl) {
+    let i = 0;
+
+    function tryNext() {
+        if (i >= imageExtensions.length) {
+            imgEl.style.display = "none";
+            return;
+        }
+
+        const path = `${pathBase}.${imageExtensions[i]}`;
+
+        const img = new Image();
+        img.onload = () => {
+            imgEl.src = path;
+            imgEl.style.display = "block";
+        };
+        img.onerror = () => {
+            i++;
+            tryNext(); // 다음 확장자 시도
+        };
+        img.src = path;
+    }
+    tryNext();
+}
+
+// 🔥 GitHub CSV 자동 로딩
 window.onload = async function () {
     const url = "https://raw.githubusercontent.com/Hyo-ham/HamCup/refs/heads/main/name.csv";
+
     try {
         const res = await fetch(url);
         const text = await res.text();
@@ -137,26 +173,33 @@ window.onload = async function () {
         }
 
         candidates = list;
-        console.log("CSV 자동 로드 완료:", candidates);
+        console.log("CSV 로드됨:", candidates);
 
     } catch (err) {
-        alert("CSV 로드 실패! GitHub raw 주소를 다시 확인해줘.");
+        alert("CSV 로드 실패!");
         console.error(err);
     }
 };
 
-// 시작
+// 🔥 시작
 function start() {
-    if (candidates.length < 2) {
-        alert("후보가 최소 2명 이상이어야 합니다!");
+    const roundCount = parseInt(document.getElementById("roundSelect").value);
+
+    if (candidates.length < roundCount) {
+        alert(`후보가 ${roundCount}명보다 적어요! CSV에 더 추가하거나 라운드를 줄여줘.`);
         return;
     }
 
     shuffle(candidates);
+
+    // 선택한 강수만큼 자르기
+    candidates = candidates.slice(0, roundCount);
+
     index = 0;
     nextRound = [];
 
     showNextMatch();
+
     document.getElementById("gameBox").style.display = "flex";
 }
 
@@ -168,7 +211,7 @@ function shuffle(arr) {
     }
 }
 
-// 다음 매치
+// 경기 표시
 function showNextMatch() {
     const left = candidates[index];
     const right = candidates[index + 1];
@@ -186,24 +229,16 @@ function showNextMatch() {
     }
 }
 
-// 카드 세팅
+// 카드 UI 세팅
 function setupCard(data, imgId, nameId) {
     const imgEl = document.getElementById(imgId);
     const nameEl = document.getElementById(nameId);
 
     nameEl.textContent = data.name;
 
-    const imgPath = `images/${data.name}.jpg`;
+    const pathBase = `images/${data.name}`;
 
-    const img = new Image();
-    img.onload = function () {
-        imgEl.src = imgPath;
-        imgEl.style.display = "block";
-    };
-    img.onerror = function () {
-        imgEl.style.display = "none";
-    };
-    img.src = imgPath;
+    loadImageAuto(pathBase, imgEl); // 이미지 자동 확장자 탐색
 }
 
 // 선택
@@ -230,7 +265,7 @@ function select(choice) {
     showNextMatch();
 }
 
-// 우승 화면
+// 우승 출력
 function showResult(winner) {
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("roundLabel").style.display = "none";
@@ -238,17 +273,9 @@ function showResult(winner) {
     document.getElementById("resultName").textContent = winner.name;
 
     const resultImg = document.getElementById("resultImg");
-    const imgPath = `images/${winner.name}.jpg`;
+    const pathBase = `images/${winner.name}`;
 
-    const img = new Image();
-    img.onload = function () {
-        resultImg.src = imgPath;
-        resultImg.style.display = "block";
-    };
-    img.onerror = function () {
-        resultImg.style.display = "none";
-    };
-    img.src = imgPath;
+    loadImageAuto(pathBase, resultImg);
 
     document.getElementById("resultBox").style.display = "block";
 }
