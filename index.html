@@ -88,7 +88,7 @@
         font-size: 18px;
         color: #4a3b31;
         font-weight: 600;
-        word-break: break-word; /* 이름 길어도 줄바꿈 */
+        word-break: break-word;
         width: 100%;
     }
 
@@ -111,11 +111,7 @@
 
 <h1>🐹 최고의 햄을 찾아서</h1>
 
-<div id="fileBox">
-    <input type="file" id="csvInput" accept=".csv">
-    <br>
-    <button onclick="start()">시작하기</button>
-</div>
+<!-- fileBox removed for auto CSV loading -->
 
 <div id="roundLabel" class="round-label"></div>
 
@@ -142,126 +138,88 @@ let candidates = [];
 let nextRound = [];
 let index = 0;
 
-// CSV 불러오기
-document.getElementById("csvInput").addEventListener("change", function(e){
-    const file = e.target.files[0];
-    if(!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(evt){
-        const lines = evt.target.result.split("\n").map(v=>v.trim());
-        let list = [];
-        for(let i=1;i<lines.length;i++){ 
+fetch("https://raw.githubusercontent.com/Hyo-ham/HamCup/refs/heads/main/name.csv")
+    .then(r=>r.text())
+    .then(text=>{
+        const lines=text.split("\n").map(v=>v.trim());
+        let list=[];
+        for(let i=1;i<lines.length;i++){
             if(!lines[i]) continue;
-            const name = lines[i].split(",")[0].trim();
-            if(!name) continue;
-            list.push({name: name});
+            const name=lines[i].split(",")[0].trim();
+            if(name) list.push({name});
         }
-        candidates = list;
-        alert("CSV 로딩 완료! 시작 버튼을 누르세요.");
-    }
-    reader.readAsText(file,"UTF-8");
-});
+        candidates=list;
+        start();
+    })
+    .catch(err=>alert("CSV 불러오기 실패: "+err));
 
-// 시작
 function start(){
-    if(candidates.length < 2){
-        alert("후보가 최소 2명 이상이어야 합니다!");
-        return;
-    }
+    if(candidates.length<2){ alert("후보가 최소 2명 필요!"); return; }
     shuffle(candidates);
-    index = 0;
-    nextRound = [];
+    index=0;
+    nextRound=[];
+    document.getElementById("gameBox").style.display="flex";
+    document.getElementById("roundLabel").style.display="block";
     showNextMatch();
-    document.getElementById("fileBox").style.display = "none";
-    document.getElementById("gameBox").style.display = "flex";
 }
 
-// 섞기
-function shuffle(arr){
-    for(let i=arr.length-1;i>0;i--){
-        const j = Math.floor(Math.random()*(i+1));
-        [arr[i], arr[j]]=[arr[j], arr[i]];
-    }
-}
+function shuffle(arr){ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [arr[i],arr[j]]=[arr[j],arr[i]]; } }
 
-// 다음 경기 표시
 function showNextMatch(){
-    const left = candidates[index];
-    const right = candidates[index+1];
-
-    document.getElementById("roundLabel").textContent = `${candidates.length}강 진행중`;
-
+    const left=candidates[index];
+    const right=candidates[index+1];
+    document.getElementById("roundLabel").textContent=`${candidates.length}강 진행중`;
     setupCard(left,"leftImg","leftName");
-
-    if(right){
-        document.getElementById("rightCard").style.display="flex";
-        setupCard(right,"rightImg","rightName");
-    }else{
-        document.getElementById("rightCard").style.display="none"; // 부전승
-    }
+    if(right){ document.getElementById("rightCard").style.display="flex"; setupCard(right,"rightImg","rightName"); }
+    else document.getElementById("rightCard").style.display="none";
 }
 
-// 카드 세팅 (이미지 자동 로드)
 function setupCard(data,imgId,nameId){
-    const imgEl = document.getElementById(imgId);
-    const nameEl = document.getElementById(nameId);
-    nameEl.textContent = data.name;
-
-    const imgPath = `images/${data.name}.jpg`;
-    const img = new Image();
-    img.onload = function(){
-        imgEl.src = imgPath;
-        imgEl.style.display="block";
-    }
-    img.onerror = function(){
-        imgEl.style.display="none";
-    }
-    img.src = imgPath;
+    const imgEl=document.getElementById(imgId);
+    const nameEl=document.getElementById(nameId);
+    nameEl.textContent=data.name;
+    const ex=["jpg","png","jpeg","webp"];
+    let found=false;
+    (function tryNext(i){
+        if(i>=ex.length){ imgEl.style.display="none"; return; }
+        const p=`images/${data.name}.${ex[i]}`;
+        const im=new Image();
+        im.onload=()=>{ imgEl.src=p; imgEl.style.display="block"; found=true; };
+        im.onerror=()=>{ if(!found) tryNext(i+1); };
+        im.src=p;
+    })(0);
 }
 
-// 선택
 function select(choice){
-    const left = candidates[index];
-    const right = candidates[index+1];
+    const left=candidates[index];
+    const right=candidates[index+1];
     if(choice===0) nextRound.push(left);
     else if(right) nextRound.push(right);
-
     index+=2;
-
     if(index>=candidates.length){
         candidates=nextRound;
         nextRound=[];
         index=0;
-        if(candidates.length===1){
-            showResult(candidates[0]);
-            return;
-        }
+        if(candidates.length===1){ showResult(candidates[0]); return; }
     }
     showNextMatch();
 }
 
-// 우승
 function showResult(winner){
     document.getElementById("gameBox").style.display="none";
     document.getElementById("roundLabel").style.display="none";
-
-    document.getElementById("resultName").textContent = winner.name;
-
+    document.getElementById("resultName").textContent=winner.name;
     const resultImg=document.getElementById("resultImg");
-    const imgPath = `images/${winner.name}.jpg`;
-    const img = new Image();
-    img.onload = function(){
-        resultImg.src=imgPath;
-        resultImg.style.display="block";
-    }
-    img.onerror=function(){
-        resultImg.style.display="none";
-    }
-    img.src = imgPath;
-
+    const ex=["jpg","png","jpeg","webp"];
+    let found=false;
+    (function tryNext(i){
+        if(i>=ex.length){ resultImg.style.display="none"; return; }
+        const p=`images/${winner.name}.${ex[i]}`;
+        const im=new Image();
+        im.onload=()=>{ resultImg.src=p; resultImg.style.display="block"; found=true; };
+        im.onerror=()=>{ if(!found) tryNext(i+1); };
+        im.src=p;
+    })(0);
     document.getElementById("resultBox").style.display="block";
 }
 </script>
-</body>
-</html>
