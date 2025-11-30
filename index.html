@@ -199,8 +199,11 @@ function start() {
     index = 0;
     nextRound = [];
 
-    showNextMatch();
+    // 시작 버튼, 라운드 선택 UI 숨기기
+    document.getElementById("roundSelect").style.display = "none";
+    document.querySelector("button").style.display = "none"; 
 
+    showNextMatch();
     document.getElementById("gameBox").style.display = "flex";
 }
 
@@ -284,4 +287,5 @@ function showResult(winner) {
 
 </body>
 </html>
+
 
