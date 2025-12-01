@@ -181,6 +181,26 @@ window.onload = async function () {
     }
 };
 
+//이미지 사전 로드
+    function preloadImage(name) {
+    return new Promise(resolve => {
+        const extensions = ["jpg", "jpeg", "png", "gif", "webp"];
+        let tried = 0;
+
+        function tryNext() {
+            if (tried >= extensions.length) return resolve(); // 실패해도 resolve
+
+            const ext = extensions[tried++];
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => tryNext();
+            img.src = `images/${name}.${ext}`;
+        }
+
+        tryNext();
+    });
+}
+    
 //시작
 function start() {
     const roundCount = parseInt(document.getElementById("roundSelect").value);
@@ -215,13 +235,22 @@ function shuffle(arr) {
 }
 
 // 경기 표시
-function showNextMatch() {
+async function showNextMatch() {
     const left = candidates[index];
     const right = candidates[index + 1];
 
-    document.getElementById("roundLabel").textContent =
-        `${candidates.length}강 진행중`;
+    document.getElementById("roundLabel").textContent = `${candidates.length}강 진행중`;
 
+    // 먼저 카드 숨기기
+    document.getElementById("gameBox").style.opacity = "0";
+
+    // 이미지가 모두 로드될 때까지 기다림
+    await Promise.all([
+        preloadImage(left.name),
+        right ? preloadImage(right.name) : Promise.resolve()
+    ]);
+
+    // 이제 카드 세팅
     setupCard(left, "leftImg", "leftName");
 
     if (right) {
@@ -230,6 +259,9 @@ function showNextMatch() {
     } else {
         document.getElementById("rightCard").style.display = "none"; // 부전승
     }
+
+    // 이미지와 이름 모두 준비된 뒤에 나타나기
+    document.getElementById("gameBox").style.opacity = "1";
 }
 
 // 카드 UI 세팅
@@ -286,6 +318,7 @@ function showResult(winner) {
 
 </body>
 </html>
+
 
 
 
