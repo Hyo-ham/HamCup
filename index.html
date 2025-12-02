@@ -255,16 +255,17 @@ async function showNextMatch() {
 
     document.getElementById("roundLabel").textContent = `${candidates.length}강 진행중`;
 
-    // 먼저 카드 숨기기
-    document.getElementById("gameBox").style.opacity = "0";
+    // 숨기기
+    const box = document.getElementById("gameBox");
+    box.style.opacity = "0";
 
-    // 이미지가 모두 로드될 때까지 기다림
+    // 이미지 로딩 대기
     await Promise.all([
         preloadImage(left.name),
         right ? preloadImage(right.name) : Promise.resolve()
     ]);
 
-    // 이제 카드 세팅
+    // 로딩 완료 후 *한 번에* 이름 + 이미지 설정
     setupCard(left, "leftImg", "leftName");
 
     if (right) {
@@ -274,8 +275,10 @@ async function showNextMatch() {
         document.getElementById("rightCard").style.display = "none"; // 부전승
     }
 
-    // 이미지와 이름 모두 준비된 뒤에 나타나기
-    document.getElementById("gameBox").style.opacity = "1";
+    // 나타내기
+    setTimeout(() => { 
+        box.style.opacity = "1"; 
+    }, 50);
 }
 
 // 카드 UI 세팅
@@ -332,6 +335,7 @@ function showResult(winner) {
 
 </body>
 </html>
+
 
 
 
