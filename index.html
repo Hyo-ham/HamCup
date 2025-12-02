@@ -286,13 +286,19 @@ function setupCard(data, imgId, nameId) {
     const imgEl = document.getElementById(imgId);
     const nameEl = document.getElementById(nameId);
 
-    nameEl.textContent = data.name;
+    // 1) UI 먼저 초기화 (👉 이전 이미지가 남아있지 않게)
+    imgEl.src = "";
+    imgEl.style.display = "none";
+    nameEl.textContent = "";
 
+    // 2) 이미지 로딩 완료 후 반영
     const pathBase = `images/${data.name}`;
 
-    loadImageAuto(pathBase, imgEl); // 이미지 자동 확장자 탐색
-}
+    loadImageAuto(pathBase, imgEl);
 
+    // 3) 이름은 이미지 표시 직전에 반영 (깜빡임 방지)
+    nameEl.textContent = data.name;
+}
 // 선택
 function select(choice) {
     const left = candidates[index];
@@ -335,6 +341,7 @@ function showResult(winner) {
 
 </body>
 </html>
+
 
 
 
