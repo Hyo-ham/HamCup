@@ -93,14 +93,6 @@ button {
 
 <h1>🐹 최고의 햄을 찾아서</h1>
 
-<select id="roundSelect" style="padding:10px; margin-top:10px; border-radius:10px; font-size:16px;">
-    <option value="4">4강</option>
-    <option value="8" selected>8강</option>
-    <option value="16">16강</option>
-    <option value="32">32강</option>
-    <option value="64">64강</option>
-</select>
-
 <button onclick="start()">시작하기</button>
 
 <div id="roundLabel" class="round-label"></div>
@@ -130,7 +122,7 @@ let index = 0;
 
 const imageExtensions = ["jpg", "jpeg", "png", "gif", "webp", "HEIC","jfif", "PNG", "JPG"];
 
-// 이미지 확장자 자동 탐색
+// 이미지 자동 로드
 function loadImageAuto(pathBase, imgEl) {
     let i = 0;
 
@@ -139,9 +131,7 @@ function loadImageAuto(pathBase, imgEl) {
             imgEl.style.display = "none";
             return;
         }
-
         const path = `${pathBase}.${imageExtensions[i]}`;
-
         const img = new Image();
         img.onload = () => {
             imgEl.src = path;
@@ -160,84 +150,56 @@ function loadImageAuto(pathBase, imgEl) {
 function preloadImage(name) {
     return new Promise(resolve => {
         let tried = 0;
-
         function tryNext() {
             if (tried >= imageExtensions.length) return resolve();
-
-            const ext = imageExtensions[tried++];
             const img = new Image();
-
             img.onload = () => resolve();
             img.onerror = () => tryNext();
-
-            img.src = `images/${name}.${ext}`;
+            img.src = `images/${name}.${imageExtensions[tried++]}`;
         }
-
         tryNext();
     });
 }
 
-// 카드 초기화
 function clearCard(imgId, nameId) {
-    const imgEl = document.getElementById(imgId);
-    const nameEl = document.getElementById(nameId);
-
-    imgEl.src = "";
-    imgEl.style.display = "none";
-    nameEl.textContent = "";
+    document.getElementById(imgId).style.display = "none";
+    document.getElementById(nameId).textContent = "";
 }
 
-// 카드 세팅
 function setupCard(data, imgId, nameId) {
-    const imgEl = document.getElementById(imgId);
-    const nameEl = document.getElementById(nameId);
-
-    nameEl.textContent = data.name;
-    loadImageAuto(`images/${data.name}`, imgEl);
+    document.getElementById(nameId).textContent = data.name;
+    loadImageAuto(`images/${data.name}`, document.getElementById(imgId));
 }
 
-// CSV 로딩
+// CSV 로드
 window.onload = async function () {
     const url = "https://raw.githubusercontent.com/Hyo-ham/HamCup/refs/heads/main/name.csv";
 
-    try {
-        const res = await fetch(url);
-        const text = await res.text();
-        const lines = text.split("\n").map(v => v.trim());
+    const res = await fetch(url);
+    const text = await res.text();
+    const lines = text.split("\n").map(v => v.trim());
 
-        let list = [];
-        for (let i = 1; i < lines.length; i++) {
-            if (!lines[i]) continue;
-            const name = lines[i].split(",")[0].trim();
-            if (name) list.push({ name: name });
-        }
-
-        candidates = list;
-        console.log("CSV 로드됨:", candidates);
-
-    } catch (err) {
-        alert("CSV 로드 실패!");
+    candidates = [];
+    for (let i = 1; i < lines.length; i++) {
+        if (!lines[i]) continue;
+        candidates.push({ name: lines[i].split(",")[0] });
     }
+
+    console.log("총 후보 수:", candidates.length);
 };
 
-// 시작
+// 시작 (전체 후보 자동)
 function start() {
-    const roundCount = parseInt(document.getElementById("roundSelect").value);
-
-    if (candidates.length < roundCount) {
-        alert(`후보가 ${roundCount}명보다 적어요!`);
+    if (candidates.length < 2) {
+        alert("후보가 부족합니다.");
         return;
     }
 
     shuffle(candidates);
-    candidates = candidates.slice(0, roundCount);
-
     index = 0;
     nextRound = [];
 
-    document.getElementById("roundSelect").style.display = "none";
     document.querySelector("button").style.display = "none";
-
     document.getElementById("gameBox").style.display = "flex";
 
     showNextMatch();
@@ -251,28 +213,24 @@ function shuffle(arr) {
     }
 }
 
-// 다음 경기 표시
+// 다음 매치
 async function showNextMatch() {
     const left = candidates[index];
     const right = candidates[index + 1];
 
-    const box = document.getElementById("gameBox");
     document.getElementById("roundLabel").textContent = `${candidates.length}강 진행중`;
 
-    // 1) 먼저 카드 숨기기
+    const box = document.getElementById("gameBox");
     box.style.opacity = "0";
 
-    // 2) 카드 UI 초기화 (잔상 방지)
     clearCard("leftImg", "leftName");
     clearCard("rightImg", "rightName");
 
-    // 3) 이미지 로딩 기다리기
     await Promise.all([
         preloadImage(left.name),
         right ? preloadImage(right.name) : Promise.resolve()
     ]);
 
-    // 4) 모든 로딩 끝난 후 UI 채우기
     setupCard(left, "leftImg", "leftName");
 
     if (right) {
@@ -282,7 +240,6 @@ async function showNextMatch() {
         document.getElementById("rightCard").style.display = "none";
     }
 
-    // 5) 다시 천천히 나타나기
     setTimeout(() => box.style.opacity = "1", 50);
 }
 
@@ -291,8 +248,7 @@ function select(choice) {
     const left = candidates[index];
     const right = candidates[index + 1];
 
-    if (choice === 0) nextRound.push(left);
-    else if (right) nextRound.push(right);
+    nextRound.push(choice === 0 ? left : right);
 
     index += 2;
 
@@ -306,26 +262,18 @@ function select(choice) {
             return;
         }
     }
-
     showNextMatch();
 }
 
-// 최종 결과
+// 결과
 function showResult(winner) {
     document.getElementById("gameBox").style.display = "none";
     document.getElementById("roundLabel").style.display = "none";
-
     document.getElementById("resultName").textContent = winner.name;
-
-    const resultImg = document.getElementById("resultImg");
-    loadImageAuto(`images/${winner.name}`, resultImg);
-
+    loadImageAuto(`images/${winner.name}`, document.getElementById("resultImg"));
     document.getElementById("resultBox").style.display = "block";
 }
 </script>
 
 </body>
 </html>
-
-
-
